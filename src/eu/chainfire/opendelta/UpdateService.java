@@ -2207,8 +2207,8 @@ OnWantUpdateCheckListener, OnSharedPreferenceChangeListener {
                         boolean updateAvilable = false;
                         if (latestFullZip != null) {
                             try {
-                                currFileDate = Long.parseLong(currentVersionZip.split("-")[6].substring(0, 8));
-                                latestFileDate = Long.parseLong(latestFullZip.split("-")[6].substring(0, 8));
+                                currFileDate = Long.parseLong(currentVersionZip.split("-")[4].substring(0, 8));
+                                latestFileDate = Long.parseLong(latestFullZip.split("-")[4].substring(0, 8));
                                 updateAvilable = latestFileDate > currFileDate;
                             } catch (NumberFormatException exception) {
                                 // Just incase someone decides to make up his own zip / build name and F's this up
