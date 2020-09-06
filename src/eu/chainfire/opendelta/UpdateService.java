@@ -39,7 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -943,29 +942,7 @@ OnWantUpdateCheckListener, OnSharedPreferenceChangeListener {
         }
     }
 
-    private boolean isMatchingImage(String fileName) {
-        try {
-            Logger.d("Image check for file name: " + fileName);
-            if(fileName.endsWith(".zip") && fileName.indexOf(config.getDevice()) != -1) {
-                String[] parts = fileName.split("-");
-                if (parts.length > 1) {
-                    Logger.d("isMatchingImage: check " + fileName);
-                    String version = parts[2].substring(1);
-                    Version current = new Version(config.getAndroidVersion());
-                    Version fileVersion = new Version(version);
-                    if (fileVersion.compareTo(current) >= 0) {
-                        Logger.d("isMatchingImage: ok " + fileName);
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Logger.ex(e);
-        }
-        return false;
-    }
-
-    private List<String> getNewestFullBuild() {
+    private String getNewestFullBuild() {
         Logger.d("Checking for latest full build");
 
         String url = config.getUrlBaseJson();
@@ -980,32 +957,19 @@ OnWantUpdateCheckListener, OnSharedPreferenceChangeListener {
             object = new JSONObject(buildData);
             JSONArray updatesList = object.getJSONArray("response");
             String latestBuild = null;
-            String urlOverride = null;
-            String md5Override = null;
-            for (int i = 0; i < updatesList.length(); i++) {
-                if (updatesList.isNull(i)) {
-                    continue;
-                }
-                try {
-                    JSONObject build = updatesList.getJSONObject(i);
-                    String fileName = new File(build.getString("filename")).getName();
-                    String urlOvr = null;
-                    String md5Ovr = null;
-                    if (build.has("url"))
-                        urlOvr = build.getString("url");
-                    if (build.has("md5url"))
-                        md5Ovr = build.getString("md5url");
-                    Logger.d("parsed from json:");
-                    Logger.d("fileName= " + fileName);
-                    if (isMatchingImage(fileName))
-                        latestBuild = fileName;
-                    if (urlOvr != null && urlOvr != "") {
-                        urlOverride = urlOvr;
-                        Logger.d("url= " + urlOverride);
-                    }
-                    if (md5Ovr != null && md5Ovr != "") {
-                        md5Override = md5Ovr;
-                        Logger.d("md5 url= " + md5Override);
+            Date latestTimestamp = new Date(0);
+            while (nextKey.hasNext()) {
+                String key = nextKey.next();
+                if (key.equals("./" + config.getDevice())) {
+                    JSONArray builds = object.getJSONArray(key);
+                    for (int i = 0; i < builds.length(); i++) {
+                        JSONObject build = builds.getJSONObject(i);
+                        String fileName = new File(build.getString("filename")).getName();
+                        Date timestamp = new Date(build.getLong("timestamp"));
+                        if (fileName.endsWith(".zip") && fileName.startsWith(config.getFileBaseNamePrefix()) && timestamp.after(latestTimestamp)) {
+                            latestBuild = fileName;
+                            latestTimestamp = timestamp;
+                        }
                     }
                 } catch (JSONException e) {
                     Logger.ex(e);
@@ -1027,7 +991,6 @@ OnWantUpdateCheckListener, OnSharedPreferenceChangeListener {
             return ret;
 
         } catch (Exception e) {
-            Logger.ex(e);
         }
         updateState(STATE_ERROR_UNOFFICIAL, null, null, null, config.getVersion(), null);
         return null;

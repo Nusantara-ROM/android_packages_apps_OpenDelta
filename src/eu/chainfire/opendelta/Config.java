@@ -312,10 +312,6 @@ public class Config {
                 getVersion().indexOf(security_version_tag) != -1;
     }
 
-    public String getAndroidVersion() {
-        return android_version;
-    }
-
     public static boolean isABDevice() {
         return SystemProperties.getBoolean(PROP_AB_DEVICE, false);
     }
